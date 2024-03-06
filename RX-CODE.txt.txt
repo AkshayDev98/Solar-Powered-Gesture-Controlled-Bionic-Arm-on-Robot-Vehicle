@@ -1,0 +1,261 @@
+RX-CODE.txt
+# include <at89x52.h>
+sbit m11=P2^1;
+sbit m12=P2^2;
+sbit m21=P2^3;
+sbit m22=P2^4;
+sbit m31=P0^4;
+sbit m32=P0^3;
+sbit m41=P0^2;
+sbit m42=P0^1;
+
+sfr16 DPTR =0x82;
+sbit triger=P3^1;
+sbit echo=P3^2;
+
+sbit D0=P3^4; 
+sbit D1=P3^5;
+sbit D2=P3^6;
+sbit D3=P3^7;
+sbit VT=P3^3;
+
+sbit STD=P1^3;
+sbit B1=P1^7;
+sbit B2=P1^6;
+sbit B3=P1^5;
+sbit B4=P1^4; 
+
+unsigned int ch,high_byte,low_byte,high_byte,distance;
+unsigned int target_range=0,d=0,rleft=0,rright=0;
+unsigned int range=0;
+unsigned int s=0;
+bit d1=0,d2=0,d3=0,sm1=0,sm2=0;
+
+void init();
+void get_range();
+void process();
+void rf_process();
+
+void Bkwd()
+	{
+		m11=0;
+		m12=1;
+		m21=1;
+		m22=0;
+	}
+	
+void arm_frwd()
+	{
+		m41=1;
+		m42=0; 	
+	}	
+	
+void frwd()
+	{
+		
+		m11=1;
+		m12=0;
+		m21=0;
+		m22=1;	
+	}
+void arm_Bkwd()
+	{
+		m41=0;
+		m42=1;		
+	}	
+	
+void Left()
+	{
+		m11=0;
+		m12=1;
+		m21=0;
+		m22=1; 
+	}
+void arm_Right()
+	{	
+		m31=1;
+		m32=0; 	
+	}
+	
+void Right()
+	{	
+		m11=1;
+		m12=0;
+		m21=1;
+		m22=0;
+	}
+		
+void arm_Left()
+	{	
+		m31=0;
+		m32=1; 
+	}
+		
+void Stop()
+{
+		m11=0;
+		m12=0;
+		m21=0;
+		m22=0;
+	
+		m31=0;
+		m32=0;
+		m41=0;
+		m42=0;
+}
+
+void delay(int a)
+{
+    int j;
+    int i;
+    for(i=0;i<a;i++)
+    {
+        for(j=0;j<120;j++)
+        {
+        }
+    }
+}
+
+
+void init()//initialise timrer
+	{
+		TMOD=0X09;
+		TR0=1;
+		TH0=0X01;
+		TL0=0X00;
+	}
+
+	void get_range()//measure distance here
+	{
+		TH0=0X00;
+		TL0=0X00;
+		triger=1;
+		delay(10);
+		triger=0;
+		while(!echo);
+		while(echo);
+		DPH=TH0;
+		DPL=TL0;
+		TH0=0XFF;
+		TL0=0XFF;
+		if(DPTR<35000)
+		range=DPTR/59;
+		else
+		range=0;
+	}
+	
+	void process()
+{ 	
+	if(range<20)//if obstacle detected take following action
+{
+	if(rleft<=6)
+	{
+		Bkwd();
+		delay(1000);
+		Left();
+		delay(2500);
+		rleft++;
+		Stop();
+	}
+
+	  	else if(rleft==4)
+		{
+			Right();
+			delay(2500);
+			Stop();
+			rleft=0;
+		}
+	}
+}
+		
+void rf_process()
+{
+	if(D0==1&&D1==1&&D2==0&&D3==0&&VT==1)
+		{	frwd();//turn vehicle forward
+			delay(60);
+		}
+	else if(D0==1&&D1==1&&D2==0&&D3==1&&VT==1)
+		{
+			
+			Bkwd();	//turn vehicle backward
+			delay(60);
+		}
+	else if(D0==0&&D1==1&&D2==1&&D3==1&&VT==1)
+		{ Left();//turn vehicle Left
+			delay(60);	
+		}
+	else if(D0==1&&D1==0&&D2==1&&D3==1&&VT==1)
+		{
+		 
+			Right();//turn vehicle Right
+			delay(60);
+		}	
+		/// arm control starts here
+	else if(D0==1&&D1==1&&D2==0&&D3==0&&VT==1)
+		{	
+			arm_Left();			//close jaw	
+			delay(60);
+		}
+	else if(D0==1&&D1==0&&D2==0&&D3==1&&VT==1)
+		{
+			arm_frwd();//turn arm down
+			delay(60);
+		}
+	else if(D0==0&&D1==0&&D2==1&&D3==1&&VT==1)
+		{
+			arm_Bkwd();	//turn arm up
+			delay(60);	
+		}
+	else if(D0==0&&D1==1&&D2==1&&D3==0&&VT==1)
+		{
+			arm_Right();	//open jaw	
+			delay(60);
+		}		
+	/// arm control ends here
+	else if(D0==1&&D1==1&&D2==1&&D3==1/&&VT==1/)
+		{
+			Stop();///disable all motors
+	    delay(60);	
+		}
+}	
+
+void main() 
+{
+	VT=1;
+	init();
+	
+	triger=0;
+	echo=1;
+	triger=1;
+	delay(10);
+	triger=0;
+	delay(41);
+	d1=1;
+	delay(2);
+	P2=0x00;
+	delay(20);
+		m11=0;//set all motor pins initially disable
+		m12=0;//set all motor pins initially disable
+		m21=0;//set all motor pins initially disable
+		m22=0;//set all motor pins initially disable
+		m31=0;//set all motor pins initially disable
+		m32=0;//set all motor pins initially disable
+		m41=0;//set all motor pins initially disable
+		m42=0;//set all motor pins initially disable
+		rleft=0;
+		rright=0;
+		
+while(1)
+	{
+		get_range();//measure distance
+		if(range>20)//if distance is more than 20 
+		{
+			rf_process();//activate rf vehicle and arm
+		}
+		else
+		{
+		delay(200);
+		process();//check for obstacle and try to avoid it
+		}			
+	}
+}
